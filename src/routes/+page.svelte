@@ -1,59 +1,39 @@
 <script>
-	import Counter from './Counter.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcome_fallback from '$lib/images/svelte-welcome.png';
+	import { face } from '$lib/backend/main';
+
+	/** Whether the face is connected */
+	$: connected = $face !== undefined;
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+	<title>NDN Forwarder Manager</title>
+	<meta name="description" content="NDN Forwarder Manager" />
 </svelte:head>
 
 <section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcome_fallback} alt="Welcome" />
-			</picture>
-		</span>
-
-		to your new<br />SvelteKit app
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
+	<div class="header">
+		<h1>NDN Forwarder Manager</h1>
+	</div>
+	<div class="content">
+		{#if connected}
+			<div id="green-text" class="center-text">NFD is running.</div>
+		{:else}
+			<div id="red-text" class="center-text">NFD is not running.</div>
+		{/if}
+	</div>
 </section>
 
 <style>
-	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
+	#green-text {
+		color: green;
 	}
 
-	h1 {
-		width: 100%;
+	#red-text {
+		color: red;
 	}
 
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
+	.center-text {
+		text-align: center;
+		font-size: xx-large;
 	}
 </style>
