@@ -10,6 +10,7 @@ import { GeneralStatus } from "./general-status"
 import { FaceStatusMsg } from "./face-status"
 import { FibStatus } from "./fib-status"
 import { RibStatus } from "./rib-status"
+import { StrategyChoiceMsg } from "./strategy-choice"
 
 const DefaultUrl = 'ws://localhost:9696/'
 
@@ -67,4 +68,10 @@ export const getFibList = async () => {
 export const getRibList = async () => {
   const result = await fetchList('rib/list')
   return Decoder.decode(result, RibStatus)
+}
+
+
+export const getStrategyChoiceList = async () => {
+  const result = await fetchList('strategy-choice/list')
+  return Decoder.decode(result, StrategyChoiceMsg)
 }
