@@ -1,22 +1,7 @@
 <script lang="ts">
-	import { GeneralStatus } from '$lib/backend/general-status';
-	import { endpoint } from '$lib/backend/main';
-	import { Interest } from '@ndn/packet';
-	import { Decoder } from '@ndn/tlv';
+	import { getForwarderStatus } from '$lib/backend/main';
 
-	const checkStatus = async () => {
-		const result = await endpoint.consume(
-			new Interest(
-				'/localhost/nfd/status/general',
-				Interest.CanBePrefix,
-				Interest.MustBeFresh,
-				Interest.Lifetime(1000)
-			)
-		);
-		console.log(result.content);
-		return Decoder.decode(result.content, GeneralStatus);
-	};
-	let statusPromise = checkStatus();
+	let statusPromise = getForwarderStatus();
 </script>
 
 <svelte:head>

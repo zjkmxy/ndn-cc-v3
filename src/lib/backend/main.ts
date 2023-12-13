@@ -3,8 +3,12 @@ import { Endpoint } from "@ndn/endpoint"
 import type { FwFace } from "@ndn/fw"
 import { WsTransport } from "@ndn/ws-transport"
 import { ControlCommand, enableNfdPrefixReg } from "@ndn/nfdmgmt"
-import { Data, Name, Signer, digestSigning } from '@ndn/packet'
+import { Data, Interest, Name, Signer, digestSigning } from '@ndn/packet'
 import { readable, writable } from "svelte/store"
+import { Decoder } from "@ndn/tlv"
+import { GeneralStatus } from "./general-status"
+import { FaceStatusMsg } from "./face-status"
+import { FibStatus } from "./fib-status"
 
 const DefaultUrl = 'ws://localhost:9696/'
 
@@ -30,4 +34,36 @@ export const disconnectFromNfd = () => {
     nfdWsFace = undefined
   }
   faceSignal.set(nfdWsFace)
+}
+
+const fetchList = async (moduleName: string) => {
+  const name = new Name(`/localhost/nfd/${moduleName}`)
+  const data = await endpoint.consume(new Interest(
+    name,
+    Interest.CanBePrefix,
+    Interest.MustBeFresh,
+    Interest.Lifetime(1000),
+  ))
+  // TODO: Fetch segmentations
+  return data.content
+}
+
+export const getForwarderStatus = async () => {
+  const result = await fetchList('status/general')
+  return Decoder.decode(result, GeneralStatus)
+}
+
+export const getFaceList = async () => {
+  const result = await fetchList('faces/list')
+  return Decoder.decode(result, FaceStatusMsg)
+}
+
+export const getFibList = async () => {
+  const result = await fetchList('fib/list')
+  return Decoder.decode(result, FibStatus)
+}
+
+export const getRibList = async () => {
+  const result = await fetchList('rib/list')
+  throw new Error('Not implemented')
 }
