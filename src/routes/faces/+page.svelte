@@ -170,7 +170,7 @@
 							<tbody>
 								{#each faces.routeData as route, idx}
 									<tr class={idx % 2 === 0 ? 'pure-table-odd' : undefined}>
-										<td><a href="/routing?name={encodeURI(route.route)}">{route.route}</a></td>
+										<td><a href="/routing?name={encodeURIComponent(route.route)}">{route.route}</a></td>
 										<td>{route.cost}</td>
 									</tr>
 								{/each}
