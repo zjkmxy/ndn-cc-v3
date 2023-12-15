@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { face } from '$lib/backend/main';
 
 	/** Whether the face is connected */

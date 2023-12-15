@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Endpoint } from "@ndn/endpoint"
-import type { FwFace } from "@ndn/fw"
+import { FwTracer, type FwFace } from "@ndn/fw"
 import { WsTransport } from "@ndn/ws-transport"
 import { ControlCommand, enableNfdPrefixReg } from "@ndn/nfdmgmt"
 import { Data, Interest, Name, Signer, digestSigning } from '@ndn/packet'
@@ -12,7 +12,7 @@ import { FibStatus } from "./fib-status"
 import { RibStatus } from "./rib-status"
 import { StrategyChoiceMsg } from "./strategy-choice"
 import { FaceEventMsg, type FaceEventNotification } from "./face-event-notification"
-import { fetch as fetchSegments } from "@ndn/segmented-object"
+import { CongestionAvoidance, TcpCubic, fetch as fetchSegments } from "@ndn/segmented-object"
 import { SequenceNum } from "@ndn/naming-convention2"
 
 const DefaultUrl = 'ws://localhost:9696/'
@@ -85,6 +85,17 @@ export const monitorFaceEvents = async () => {
     segmentNumConvention: SequenceNum,
     retxLimit: Number.MAX_SAFE_INTEGER,
     lifetimeAfterRto: 60000,
+    ca: new class extends TcpCubic {
+      override increase(now: number, rtt: number) {
+        // Rate limit: not supported by default implementation
+        const { cwnd } = this;
+        if (cwnd > 3) {
+          return;
+        }
+        return super.increase(now, rtt);
+      }
+      override decrease(now: number) { return super.decrease(now); }
+    }
   })
   for await (const segment of continuation) {
     // This loop will never finish
@@ -97,3 +108,5 @@ export const monitorFaceEvents = async () => {
     })
   }
 }
+
+FwTracer.enable()
