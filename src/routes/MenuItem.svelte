@@ -1,4 +1,4 @@
-<script lang='ts'>
+<script lang="ts">
 	import { page } from '$app/stores';
 	export let linkName: string;
 	export let pageName: string;

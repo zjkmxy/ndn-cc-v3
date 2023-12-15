@@ -29,7 +29,6 @@
 		interest.mustBeFresh = mustBeFresh;
 		const tic = performance.now();
 		try {
-			// TODO: For mytherious reason all Interests expires. Maybe related to the zealotry behavior of face event fetcher
 			const result = await endpoint.consume(interest);
 			const toc = performance.now();
 			if (downloadUrl !== '') {
@@ -132,11 +131,11 @@
 			<form class="pure-form pure-form-aligned">
 				<fieldset>
 					<div class="pure-control-group">
-						<label>Response Time</label>
+						<span>Response Time</span>
 						<span class="pure-form-message-inline">{response.time}</span>
 					</div>
 					<div class="pure-control-group">
-						<label>Response Type</label>
+						<span>Response Type</span>
 						<span class="pure-form-message-inline">{response.type}</span>
 					</div>
 					<div class="pure-control-group">
@@ -152,13 +151,13 @@
 					</div>
 					{#if response.contentType}
 						<div class="pure-control-group">
-							<label>ContentType</label>
+							<span>ContentType</span>
 							<span class="pure-form-message-inline">{response.contentType}</span>
 						</div>
 					{/if}
 					{#if response.freshnessPeriod}
 						<div class="pure-control-group">
-							<label>FreshnessPeriod</label>
+							<span>FreshnessPeriod</span>
 							<span class="pure-form-message-inline">{response.freshnessPeriod}</span>
 						</div>
 					{/if}
@@ -177,13 +176,13 @@
 					{/if}
 					{#if response.signatureType}
 						<div class="pure-control-group">
-							<label>SignatureType</label>
+							<span>SignatureType</span>
 							<span class="pure-form-message-inline">{response.signatureType}</span>
 						</div>
 					{/if}
 					{#if response.reason}
 						<div class="pure-control-group">
-							<label>Reason Code</label>
+							<span>Reason Code</span>
 							<span class="pure-form-message-inline">{response.reason}</span>
 						</div>
 					{/if}
