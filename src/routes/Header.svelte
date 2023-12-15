@@ -1,10 +1,7 @@
 <script context="module">
-	import { connectToNfd, disconnectFromNfd } from '$lib/backend/main';
-	import { onDestroy } from 'svelte';
+	import { connectToNfd, monitorFaceEvents } from '$lib/backend/main';
 
-	// WebSocket is closed before the connection is established.
-	// Error: connectTimeout
-	connectToNfd();
+	connectToNfd().then(monitorFaceEvents);
 	// onDestroy(disconnectFromNfd);  // Not allowed. In component only.
 </script>
 

@@ -89,8 +89,8 @@
 							<input type="text" name="name" id="name" />
 						</p>
 						<p>
-							<label for="face_id">Face ID</label>
-							<input type="text" name="face_id" id="face_id" />
+							<label for="faceId">Face ID</label>
+							<input type="text" name="faceId" id="faceId" />
 						</p>
 						<p>
 							<button type="submit">Add</button>
@@ -114,7 +114,7 @@
 							<tbody>
 								{#each data.fibRoutes as route, idx}
 									<tr class={idx % 2 === 0 ? 'pure-table-odd' : undefined}>
-										<td><a href="/faces?face_id={route.faceId}">{route.faceId}</a></td>
+										<td><a href="/faces?faceId={route.faceId}">{route.faceId}</a></td>
 										<td>{data.faceMap[route.faceId]}</td>
 										<td>{route.cost}</td>
 									</tr>
@@ -138,7 +138,7 @@
 							<tbody>
 								{#each data.ribRoutes as route, idx}
 									<tr class={idx % 2 === 0 ? 'pure-table-odd' : undefined}>
-										<td><a href="/faces?face_id={route.faceId}">{route.faceId}</a></td>
+										<td><a href="/faces?faceId={route.faceId}">{route.faceId}</a></td>
 										<td>{data.faceMap[route.faceId]}</td>
 										<td>{route.origin}</td>
 										<td>{route.cost}</td>
@@ -146,7 +146,7 @@
 										<td>
 											<form action="/routing/remove" method="post">
 												<input type="hidden" name="name" value={requestName} />
-												<input type="hidden" name="face_id" value={route.faceId} />
+												<input type="hidden" name="faceId" value={route.faceId} />
 												<button type="submit">Remove</button>
 											</form>
 										</td>

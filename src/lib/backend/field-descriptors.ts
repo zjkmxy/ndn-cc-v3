@@ -2,13 +2,8 @@ import { Name } from "@ndn/packet"
 import { Decoder, type Encodable, Encoder, EvDecoder, NNI, type Decodable } from "@ndn/tlv"
 import { toUtf8 } from "@ndn/util"
 
-export function decodeNNI({ nni }: Decoder.Tlv) {
-  return nni
-}
-
-export function decodeString({ text }: Decoder.Tlv) {
-  return text
-}
+export const decodeNNI = ({ nni }: Decoder.Tlv) => nni
+export const decodeString = ({ text }: Decoder.Tlv) => text
 
 export type FieldDescriptor<T, K> = {
   tt: number,

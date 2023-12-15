@@ -11,13 +11,16 @@ import { FaceStatusMsg } from "./face-status"
 import { FibStatus } from "./fib-status"
 import { RibStatus } from "./rib-status"
 import { StrategyChoiceMsg } from "./strategy-choice"
+import { FaceEventMsg, type FaceEventNotification } from "./face-event-notification"
+import { fetch as fetchSegments } from "@ndn/segmented-object"
+import { SequenceNum } from "@ndn/naming-convention2"
 
 const DefaultUrl = 'ws://localhost:9696/'
 
 export const endpoint: Endpoint = new Endpoint()
 let nfdWsFace: FwFace | undefined = undefined
-const faceSignal = writable<FwFace | undefined>()
-export const face = readable(faceSignal)
+export const face = writable<FwFace | undefined>()
+export const faceEvents = writable<FaceEventNotification[]>([])
 
 export const connectToNfd = async () => {
   if (nfdWsFace) {
@@ -27,7 +30,7 @@ export const connectToNfd = async () => {
   enableNfdPrefixReg(nfdWsFace, {
     signer: digestSigning,
   })
-  faceSignal.set(nfdWsFace)
+  face.set(nfdWsFace)
 }
 
 export const disconnectFromNfd = () => {
@@ -35,7 +38,7 @@ export const disconnectFromNfd = () => {
     nfdWsFace.close()
     nfdWsFace = undefined
   }
-  faceSignal.set(nfdWsFace)
+  face.set(nfdWsFace)
 }
 
 const fetchList = async (moduleName: string) => {
@@ -74,4 +77,23 @@ export const getRibList = async () => {
 export const getStrategyChoiceList = async () => {
   const result = await fetchList('strategy-choice/list')
   return Decoder.decode(result, StrategyChoiceMsg)
+}
+
+export const monitorFaceEvents = async () => {
+  // fetchSegments is not supposed to be working with sequence numbers, but I can abuse the convention
+  const continuation = fetchSegments("/localhost/nfd/faces/events", {
+    segmentNumConvention: SequenceNum,
+    retxLimit: Number.MAX_SAFE_INTEGER,
+    lifetimeAfterRto: 60000,
+  })
+  for await (const segment of continuation) {
+    // This loop will never finish
+    const event = Decoder.decode(segment.content, FaceEventMsg)
+    faceEvents.update(items => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (event.event as any)['time'] = Date.now()
+      items.push(event.event)
+      return items
+    })
+  }
 }
