@@ -3,7 +3,10 @@
 	import type { FibEntry, NextHopRecord } from '$lib/backend/fib-status';
 	import { getFaceList, getFibList, getRibList } from '$lib/backend/main';
 	import type { RibEntry, Route } from '$lib/backend/rib-status';
+	import { ControlCommand } from '@ndn/nfdmgmt';
 	import RouteListTable from './RouteListTable.svelte';
+	import { Name, digestSigning } from '@ndn/packet';
+	import { routeOriginRepr } from '$lib/backend/enums';
 
 	type ResponseType = {
 		stCode?: number;
@@ -51,6 +54,35 @@
 	};
 
 	$: dataPromise = run(requestName);
+
+	let newRouteName = '';
+	let newRouteFaceId = 0;
+
+	const addRoute = async (prefix: string, faceId: number) => {
+		const response = await ControlCommand.call(
+			'rib/register',
+			{ name: new Name(prefix), faceId: faceId },
+			{
+				commandPrefix: ControlCommand.localhostPrefix,
+				signer: digestSigning
+			}
+		);
+		const newData = await run(requestName);
+		return { ...newData, stCode: response.statusCode, stText: response.statusText };
+	};
+
+	const removeRoute = async (prefix: string, faceId: number) => {
+		const response = await ControlCommand.call(
+			'rib/unregister',
+			{ name: new Name(prefix), faceId: faceId },
+			{
+				commandPrefix: ControlCommand.localhostPrefix,
+				signer: digestSigning
+			}
+		);
+		const newData = await run(requestName);
+		return { ...newData, stCode: response.statusCode, stText: response.statusText };
+	};
 </script>
 
 <svelte:head>
@@ -83,19 +115,25 @@
 						}))}
 					/>
 					<br />
-					<form action="/routing/add" method="post">
+					<div>
 						<p>
 							<label for="name">Prefix</label>
-							<input type="text" name="name" id="name" />
+							<input type="text" name="name" id="name" bind:value={newRouteName} />
 						</p>
 						<p>
 							<label for="faceId">Face ID</label>
-							<input type="text" name="faceId" id="faceId" />
+							<input type="text" name="faceId" id="faceId" bind:value={newRouteFaceId} />
 						</p>
 						<p>
-							<button type="submit">Add</button>
+							<button
+								on:click={() => {
+									dataPromise = addRoute(newRouteName, newRouteFaceId);
+								}}
+							>
+								Add
+							</button>
 						</p>
-					</form>
+					</div>
 					{#if data.stCode}
 						<p>{data.stCode} {data.stText}</p>
 					{/if}
@@ -140,15 +178,17 @@
 									<tr class={idx % 2 === 0 ? 'pure-table-odd' : undefined}>
 										<td><a href="/faces?faceId={route.faceId}">{route.faceId}</a></td>
 										<td>{data.faceMap[route.faceId]}</td>
-										<td>{route.origin}</td>
+										<td>{routeOriginRepr(route.origin)}</td>
 										<td>{route.cost}</td>
 										<td>{route.flags}</td>
 										<td>
-											<form action="/routing/remove" method="post">
-												<input type="hidden" name="name" value={requestName} />
-												<input type="hidden" name="faceId" value={route.faceId} />
-												<button type="submit">Remove</button>
-											</form>
+											<div>
+												<button on:click={() => {
+														dataPromise = removeRoute(requestName!, route.faceId);
+													}}>
+													Remove
+												</button>
+											</div>
 										</td>
 									</tr>
 								{/each}

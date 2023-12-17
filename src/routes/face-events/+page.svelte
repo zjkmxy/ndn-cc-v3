@@ -36,7 +36,7 @@
 				{#each $faceEvents as event, idx}
 					<tr>
 						<td>{idx}</td>
-						<td>{(new Date((event as any)['time'])).toLocaleString()}</td>
+						<td>{new Date(event.time).toLocaleString()}</td>
 						<td>{event.faceId}</td>
 						<td>{event.localUri}</td>
 						<td>{faceEventKindToString(event.faceEventKind)}</td>

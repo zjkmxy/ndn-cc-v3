@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { getStrategyChoiceList } from '$lib/backend/main';
 	import type { StrategyChoice } from '$lib/backend/strategy-choice';
+	import { ControlCommand } from '@ndn/nfdmgmt';
+	import { Name, digestSigning } from '@ndn/packet';
 
 	type ResponseType = {
 		stCode?: number;
@@ -20,6 +22,35 @@
 	};
 
 	$: dataPromise = run();
+
+	let newStrategyPrefix = '';
+	let newStrategyValue = '';
+
+	const setStrategy = async (prefix: string, strategy: string) => {
+		const response = await ControlCommand.call(
+			'strategy-choice/set',
+			{ name: new Name(prefix), strategy: new Name(strategy) },
+			{
+				commandPrefix: ControlCommand.localhostPrefix,
+				signer: digestSigning
+			}
+		);
+		const newData = await run();
+		return { ...newData, stCode: response.statusCode, stText: response.statusText };
+	};
+
+	const unsetStrategy = async (prefix: string) => {
+		const response = await ControlCommand.call(
+			'strategy-choice/unset',
+			{ name: new Name(prefix) },
+			{
+				commandPrefix: ControlCommand.localhostPrefix,
+				signer: digestSigning
+			}
+		);
+		const newData = await run();
+		return { ...newData, stCode: response.statusCode, stText: response.statusText };
+	};
 </script>
 
 <svelte:head>
@@ -48,36 +79,46 @@
 							<td>{item.name}</td>
 							<td>{item.strategy}</td>
 							<td>
-								<form action="/strategies/unset" method="post">
-									<input type="hidden" name="name" value={item.name} />
-									<button type="submit">Unset</button>
-								</form>
+								<div>
+									<button
+										on:click={() => {
+											dataPromise = unsetStrategy(item.name);
+										}}
+									>
+										Unset
+									</button>
+								</div>
 							</td>
 						</tr>
 					{/each}
 				</tbody>
 			</table>
-			<form class="pure-form" action="/strategies/set" method="post">
+			<div class="pure-form">
 				<p>
 					<label for="name">Name</label>
-					<input type="text" name="name" id="name" />
+					<input type="text" name="name" id="name" bind:value={newStrategyPrefix} />
 				</p>
 				<p>
 					<label for="strategy">Strategy</label>
-					<select name="strategy" id="strategy">
+					<select name="strategy" id="strategy" bind:value={newStrategyValue}>
 						<option value="/localhost/nfd/strategy/multicast">Multicast</option>
 						<option value="/localhost/nfd/strategy/best-route">Best Route</option>
 						<option value="/localhost/nfd/strategy/access">Access Router</option>
-						<option value="/localhost/nfd/strategy/asf">ASF (Adaptive SRTT-based Forwarding)</option
-						>
+						<option value="/localhost/nfd/strategy/asf">ASF (Adaptive SRTT-based Forwarding)</option>
 						<option value="/localhost/nfd/strategy/self-learning">Self-Learning</option>
 						<option value="/localhost/nfd/strategy/ncc">NCC (CCNx default)</option>
 					</select>
 				</p>
 				<p>
-					<button type="submit">Set</button>
+					<button
+						on:click={() => {
+							dataPromise = setStrategy(newStrategyPrefix, newStrategyValue);
+						}}
+					>
+						Set
+					</button>
 				</p>
-			</form>
+			</div>
 			{#if data.stCode}
 				<p>{data.stCode} {data.stText}</p>
 			{/if}

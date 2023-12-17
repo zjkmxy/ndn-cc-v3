@@ -1,12 +1,5 @@
 import { Name, TT } from '@ndn/packet';
-import {
-	ArrayField,
-	NNIField,
-	NameField,
-	StructField,
-	createEVDFromStruct,
-	encodeStruct
-} from './field-descriptors';
+import { ArrayField, NNIField, NameField, StructField, createEVDFromStruct, encodeStruct } from './field-descriptors';
 import type { Decoder, Encoder } from '@ndn/tlv';
 
 /** NFD Management Route struct. */
@@ -63,9 +56,7 @@ export class RibEntry {
 
 /** NFD Management RibStatus struct, which is a list of RibEntry. */
 export class RibStatus {
-	static readonly Descriptor = [
-		ArrayField(StructField(0x80, 'entries' as const, RibEntry.Descriptor, RibEntry))
-	];
+	static readonly Descriptor = [ArrayField(StructField(0x80, 'entries' as const, RibEntry.Descriptor, RibEntry))];
 
 	constructor(public entries: RibEntry[] = []) {}
 

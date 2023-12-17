@@ -1,12 +1,5 @@
 import { Name, TT } from '@ndn/packet';
-import {
-	ArrayField,
-	NNIField,
-	NameField,
-	StructField,
-	createEVDFromStruct,
-	encodeStruct
-} from './field-descriptors';
+import { ArrayField, NNIField, NameField, StructField, createEVDFromStruct, encodeStruct } from './field-descriptors';
 import type { Decoder, Encoder } from '@ndn/tlv';
 
 /** NFD Management NextHopRecord struct. */
@@ -18,10 +11,7 @@ export class NextHopRecord {
 		public cost = 0
 	) {}
 
-	static readonly EVD = createEVDFromStruct<NextHopRecord>(
-		'NextHopRecord',
-		NextHopRecord.Descriptor
-	);
+	static readonly EVD = createEVDFromStruct<NextHopRecord>('NextHopRecord', NextHopRecord.Descriptor);
 
 	public static decodeFrom(decoder: Decoder): NextHopRecord {
 		return NextHopRecord.EVD.decodeValue(new NextHopRecord(), decoder);
@@ -36,9 +26,7 @@ export class NextHopRecord {
 export class FibEntry {
 	static readonly Descriptor = [
 		NameField(TT.Name, 'name' as const),
-		ArrayField(
-			StructField(0x81, 'nextHopRecords' as const, NextHopRecord.Descriptor, NextHopRecord)
-		)
+		ArrayField(StructField(0x81, 'nextHopRecords' as const, NextHopRecord.Descriptor, NextHopRecord))
 	];
 
 	constructor(
@@ -59,9 +47,7 @@ export class FibEntry {
 
 /** NFD Management FibStatus struct, which is a list of FibEntry. */
 export class FibStatus {
-	static readonly Descriptor = [
-		ArrayField(StructField(0x80, 'fibEntries' as const, FibEntry.Descriptor, FibEntry))
-	];
+	static readonly Descriptor = [ArrayField(StructField(0x80, 'fibEntries' as const, FibEntry.Descriptor, FibEntry))];
 
 	constructor(public fibEntries: FibEntry[] = []) {}
 

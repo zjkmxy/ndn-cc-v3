@@ -22,10 +22,7 @@ export class GeneralStatus {
 		NNIField(0x9a, 'nUnsatisfiedInterests' as const)
 	];
 
-	static readonly EVD = createEVDFromStruct<GeneralStatus>(
-		'GeneralStatus',
-		GeneralStatus.Descriptor
-	);
+	static readonly EVD = createEVDFromStruct<GeneralStatus>('GeneralStatus', GeneralStatus.Descriptor);
 
 	public static decodeFrom(decoder: Decoder): GeneralStatus {
 		return GeneralStatus.EVD.decodeValue(new GeneralStatus(), decoder);

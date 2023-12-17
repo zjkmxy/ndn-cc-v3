@@ -69,3 +69,23 @@ export const nackReasonRepr = (v: number) => {
 		return `${v} Unknown`;
 	}
 };
+
+export const routeOriginRepr = (v: number) => {
+	if (v == 0) {
+		return 'app';
+	} else if (v == 255) {
+		return 'static';
+	} else if (v == 128) {
+		return 'nlsr';
+	} else if (v == 129) {
+		return 'prefixann';
+	} else if (v == 65) {
+		return 'client';
+	} else if (v == 64) {
+		return 'autoreg';
+	} else if (v == 66) {
+		return 'autoconf';
+	} else {
+		return `${v}`;
+	}
+};

@@ -1,26 +1,30 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Endpoint } from '@ndn/endpoint';
-import { FwTracer, type FwFace } from '@ndn/fw';
+import type { FwFace } from '@ndn/fw';
 import { WsTransport } from '@ndn/ws-transport';
 import { ControlCommand, enableNfdPrefixReg } from '@ndn/nfdmgmt';
-import { Data, Interest, Name, Signer, digestSigning } from '@ndn/packet';
-import { readable, writable } from 'svelte/store';
-import { Decoder } from '@ndn/tlv';
+import { Component, Interest, Name, digestSigning } from '@ndn/packet';
+import { writable } from 'svelte/store';
+import { Decoder, Encoder } from '@ndn/tlv';
 import { GeneralStatus } from './general-status';
 import { FaceStatusMsg } from './face-status';
 import { FibStatus } from './fib-status';
 import { RibStatus } from './rib-status';
 import { StrategyChoiceMsg } from './strategy-choice';
 import { FaceEventMsg, type FaceEventNotification } from './face-event-notification';
-import { CongestionAvoidance, TcpCubic, fetch as fetchSegments } from '@ndn/segmented-object';
+import { TcpCubic, fetch as fetchSegments } from '@ndn/segmented-object';
 import { SequenceNum } from '@ndn/naming-convention2';
+import { FaceQueryFilter, FaceQueryFilterValue } from './face-query';
 
 const DefaultUrl = 'ws://localhost:9696/';
 
 export const endpoint: Endpoint = new Endpoint();
 let nfdWsFace: FwFace | undefined = undefined;
 export const face = writable<FwFace | undefined>();
-export const faceEvents = writable<FaceEventNotification[]>([]);
+export type FaceEventWithTime = {
+	[Key in keyof FaceEventNotification]: FaceEventNotification[Key];
+} & { time: number };
+export const faceEvents = writable<FaceEventWithTime[]>([]);
 
 export const connectToNfd = async () => {
 	if (nfdWsFace) {
@@ -81,34 +85,49 @@ export const monitorFaceEvents = async () => {
 		segmentNumConvention: SequenceNum,
 		retxLimit: Number.MAX_SAFE_INTEGER,
 		lifetimeAfterRto: 1000, // The true timeout timer is the RTO
-		ca: new (class extends TcpCubic {
-			override increase(now: number, rtt: number) {
-				// Rate limit: not supported by default implementation
-				const { cwnd } = this;
-				if (cwnd > 3) {
-					return;
-				}
-				return super.increase(now, rtt);
-			}
-			override decrease(now: number) {
-				return super.decrease(now);
-			}
-		})(),
 		rtte: {
 			minRto: 60000,
 			maxRto: 120000
-		}
+		},
+		ca: new (class extends TcpCubic {
+			override increase(now: number, rtt: number) {
+				// Rate limit: not supported by default implementation
+				if (this.cwnd <= 3) {
+					return super.increase(now, rtt);
+				}
+			}
+		})()
 	});
 	for await (const segment of continuation) {
 		// This loop will never finish
 		const event = Decoder.decode(segment.content, FaceEventMsg);
 		faceEvents.update((items) => {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(event.event as any)['time'] = Date.now();
-			items.push(event.event);
+			items.push({ time: Date.now(), ...event.event, encodeTo() {} });
 			return items;
 		});
 	}
 };
 
-FwTracer.enable();
+export const queryFaceId = async (uri: string) => {
+	const queryFilter = new FaceQueryFilter();
+	queryFilter.value.uri = uri;
+	const filterMsg = Encoder.encode(queryFilter);
+
+	const result = await endpoint.consume(
+		new Interest(
+			new Name('/localhost/nfd/faces/query').append(new Component(8, filterMsg)),
+			Interest.Lifetime(1000),
+			Interest.CanBePrefix,
+			Interest.MustBeFresh
+		)
+	);
+
+	const status = Decoder.decode(result.content, FaceStatusMsg);
+	if (status.faces.length <= 0) {
+		return undefined;
+	} else {
+		return status.faces[0].faceId;
+	}
+};
+
+// FwTracer.enable();

@@ -1,11 +1,5 @@
 import { Name, TT } from '@ndn/packet';
-import {
-	ArrayField,
-	NameField,
-	StructField,
-	createEVDFromStruct,
-	encodeStruct
-} from './field-descriptors';
+import { ArrayField, NameField, StructField, createEVDFromStruct, encodeStruct } from './field-descriptors';
 import type { Decoder, Encoder } from '@ndn/tlv';
 
 /** NFD Management Strategy struct. */
@@ -37,10 +31,7 @@ export class StrategyChoice {
 		public strategy = new Strategy()
 	) {}
 
-	static readonly EVD = createEVDFromStruct<StrategyChoice>(
-		'StrategyChoice',
-		StrategyChoice.Descriptor
-	);
+	static readonly EVD = createEVDFromStruct<StrategyChoice>('StrategyChoice', StrategyChoice.Descriptor);
 
 	public static decodeFrom(decoder: Decoder): StrategyChoice {
 		return StrategyChoice.EVD.decodeValue(new StrategyChoice(), decoder);
@@ -54,17 +45,12 @@ export class StrategyChoice {
 /** NFD Management StrategyChoiceMsg struct, which is a list of StrategyChoice. */
 export class StrategyChoiceMsg {
 	static readonly Descriptor = [
-		ArrayField(
-			StructField(0x80, 'strategyChoices' as const, StrategyChoice.Descriptor, StrategyChoice)
-		)
+		ArrayField(StructField(0x80, 'strategyChoices' as const, StrategyChoice.Descriptor, StrategyChoice))
 	];
 
 	constructor(public strategyChoices: StrategyChoice[] = []) {}
 
-	static readonly EVD = createEVDFromStruct<StrategyChoiceMsg>(
-		'StrategyChoiceMsg',
-		StrategyChoiceMsg.Descriptor
-	);
+	static readonly EVD = createEVDFromStruct<StrategyChoiceMsg>('StrategyChoiceMsg', StrategyChoiceMsg.Descriptor);
 
 	public static decodeFrom(decoder: Decoder): StrategyChoiceMsg {
 		return StrategyChoiceMsg.EVD.decodeValue(new StrategyChoiceMsg(), decoder);

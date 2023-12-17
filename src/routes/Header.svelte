@@ -35,11 +35,11 @@
 				<MenuItem linkName="/routing" pageName="Routing" />
 				<MenuItem linkName="/strategies" pageName="Strategies" />
 				<MenuItem linkName="/face-events" pageName="Face Events" />
-				<!-- <MenuItem linkName="/autoconf" pageName="Auto Configuration" />
-				<MenuItem linkName="/certificate-requests" pageName="Certificate Requests" />
+				<MenuItem linkName="/autoconf" pageName="Auto Configuration" />
+				<!-- <MenuItem linkName="/certificate-requests" pageName="Certificate Requests" />
 				{// Key management needs SQLite WASM and local file access, which is only doable in some browsers.}
 				<MenuItem linkName="/key-management" pageName="Key Management" /> -->
-				<MenuItem linkName="/ndn-ping" pageName="NDN Ping" />
+				<MenuItem linkName="/ndn-ping" pageName="NDN Peek" />
 			</ul>
 		</div>
 	</nav>

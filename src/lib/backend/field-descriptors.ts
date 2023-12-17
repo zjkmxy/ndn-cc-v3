@@ -48,10 +48,7 @@ export const BoolField = <K>(tt: number, key: K): FieldDescriptor<boolean, K> =>
 	decode: () => true
 });
 
-export const encodeStruct = <T extends object>(
-	value: T,
-	descriptor: ValidFieldDescriptorOf<T>[]
-): Encodable[] =>
+export const encodeStruct = <T extends object>(value: T, descriptor: ValidFieldDescriptorOf<T>[]): Encodable[] =>
 	descriptor.map((fieldDesc) => {
 		const fieldValue = value[fieldDesc.key];
 		if (fieldValue !== null && fieldValue !== undefined) {

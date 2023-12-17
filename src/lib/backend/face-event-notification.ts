@@ -1,10 +1,4 @@
-import {
-	NNIField,
-	StringField,
-	StructField,
-	createEVDFromStruct,
-	encodeStruct
-} from './field-descriptors';
+import { NNIField, StringField, StructField, createEVDFromStruct, encodeStruct } from './field-descriptors';
 import type { Decoder, Encoder } from '@ndn/tlv';
 
 /** The TLV-value of NFD Management's FaceEventNotification. */
@@ -41,9 +35,7 @@ export class FaceEventNotification {
 	}
 
 	public encodeTo(encoder: Encoder) {
-		encoder.prependValue(
-			...encodeStruct(this as FaceEventNotification, FaceEventNotification.Descriptor)
-		);
+		encoder.prependValue(...encodeStruct(this as FaceEventNotification, FaceEventNotification.Descriptor));
 	}
 }
 

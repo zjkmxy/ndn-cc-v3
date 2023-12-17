@@ -34,9 +34,7 @@
 			if (downloadUrl !== '') {
 				URL.revokeObjectURL(downloadUrl);
 			}
-			downloadUrl = URL.createObjectURL(
-				new Blob([result.content], { type: 'application/octet-stream' })
-			);
+			downloadUrl = URL.createObjectURL(new Blob([result.content], { type: 'application/octet-stream' }));
 			response = {
 				time: toc - tic,
 				type: 'Data',
@@ -71,38 +69,19 @@
 		<div class="pure-form pure-form-aligned">
 			<div class="pure-control-group">
 				<label for="name">Name</label>
-				<input
-					type="text"
-					class="pure-u-2-3"
-					name="name"
-					id="name"
-					required
-					bind:value={intNameStr}
-				/>
+				<input type="text" class="pure-u-2-3" name="name" id="name" required bind:value={intNameStr} />
 			</div>
 			<div class="pure-control-group">
 				<label for="can_be_prefix">CanBePrefix</label>
 				{#each [true, false] as value}
-					<input
-						type="radio"
-						name="can_be_prefix"
-						id="can_be_prefix"
-						{value}
-						bind:group={canBePrefix}
-					/>
+					<input type="radio" name="can_be_prefix" id="can_be_prefix" {value} bind:group={canBePrefix} />
 					{value ? 'True' : 'False'}
 				{/each}
 			</div>
 			<div class="pure-control-group">
 				<label for="must_be_fresh">MustBeFresh</label>
 				{#each [true, false] as value}
-					<input
-						type="radio"
-						name="must_be_fresh"
-						id="must_be_fresh"
-						{value}
-						bind:group={mustBeFresh}
-					/>
+					<input type="radio" name="must_be_fresh" id="must_be_fresh" {value} bind:group={mustBeFresh} />
 					{value ? 'True' : 'False'}
 				{/each}
 			</div>
@@ -120,9 +99,7 @@
 				/>
 			</div>
 			<div class="pure-controls">
-				<button on:click={expressInterest} class="pure-button pure-button-primary">
-					Express Interest
-				</button>
+				<button on:click={expressInterest} class="pure-button pure-button-primary"> Express Interest </button>
 			</div>
 		</div>
 
@@ -140,14 +117,7 @@
 					</div>
 					<div class="pure-control-group">
 						<label for="res_name">Name</label>
-						<input
-							type="text"
-							class="pure-u-2-3"
-							name="res_name"
-							id="res_name"
-							value={response.name}
-							readonly
-						/>
+						<input type="text" class="pure-u-2-3" name="res_name" id="res_name" value={response.name} readonly />
 					</div>
 					{#if response.contentType}
 						<div class="pure-control-group">

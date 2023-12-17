@@ -1,11 +1,4 @@
-import {
-	ArrayField,
-	NNIField,
-	StringField,
-	StructField,
-	createEVDFromStruct,
-	encodeStruct
-} from './field-descriptors';
+import { ArrayField, NNIField, StringField, StructField, createEVDFromStruct, encodeStruct } from './field-descriptors';
 import type { Decoder, Encoder } from '@ndn/tlv';
 
 /** NFD Management FaceStatus struct. */
@@ -67,16 +60,11 @@ export class FaceStatus {
 
 /** NFD Management FaceStatus messages, which is a list of FaceStatus. */
 export class FaceStatusMsg {
-	static readonly Descriptor = [
-		ArrayField(StructField(0x80, 'faces' as const, FaceStatus.Descriptor, FaceStatus))
-	];
+	static readonly Descriptor = [ArrayField(StructField(0x80, 'faces' as const, FaceStatus.Descriptor, FaceStatus))];
 
 	constructor(public faces: FaceStatus[] = []) {}
 
-	static readonly EVD = createEVDFromStruct<FaceStatusMsg>(
-		'FaceStatusMsg',
-		FaceStatusMsg.Descriptor
-	);
+	static readonly EVD = createEVDFromStruct<FaceStatusMsg>('FaceStatusMsg', FaceStatusMsg.Descriptor);
 
 	public static decodeFrom(decoder: Decoder): FaceStatusMsg {
 		return FaceStatusMsg.EVD.decodeValue(new FaceStatusMsg(), decoder);

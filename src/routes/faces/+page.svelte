@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import type { FaceStatus } from '$lib/backend/face-status';
 	import { getFaceList, getFibList } from '$lib/backend/main';
+	import { ControlCommand } from '@ndn/nfdmgmt';
+	import { digestSigning } from '@ndn/packet';
 
 	type ResponseType = {
 		list: FaceStatus[];
@@ -45,6 +47,44 @@
 	};
 
 	$: facesPromise = run(faceIdStr);
+
+	let newFaceIp = '';
+	const addFace = async () => {
+		let uri = newFaceIp;
+		if (uri[-1] == '/') {
+			uri = uri.substring(0, uri.length - 1);
+		}
+		if (uri.search('://') < 0) {
+			uri = 'udp4://' + uri;
+		}
+		if (uri.split(':').length < 3) {
+			uri = uri + ':6363';
+		}
+
+		const response = await ControlCommand.call(
+			'faces/create' as any,
+			{ uri },
+			{
+				commandPrefix: ControlCommand.localhostPrefix,
+				signer: digestSigning
+			}
+		);
+		const newFaces = await run(faceIdStr);
+		return { ...newFaces, stCode: response.statusCode, stText: response.statusText };
+	};
+
+	const removeFace = async (faceId: number) => {
+		const response = await ControlCommand.call(
+			'faces/destroy' as any,
+			{ faceId },
+			{
+				commandPrefix: ControlCommand.localhostPrefix,
+				signer: digestSigning
+			}
+		);
+		const newFaces = await run(faceIdStr);
+		return { ...newFaces, stCode: response.statusCode, stText: response.statusText };
+	};
 </script>
 
 <svelte:head>
@@ -88,24 +128,35 @@
 									<td>{item.uri}</td>
 									<td hidden>{item.localUri}</td>
 									<td>
-										<form class="pure-form" action="/faces/remove" method="get">
-											<input type="hidden" name="faceId" value={item.faceId} />
-											<button type="submit">Remove</button>
-										</form>
+										<div class="pure-form">
+											<button
+												on:click={() => {
+													facesPromise = removeFace(item.faceId);
+												}}
+											>
+												Remove
+											</button>
+										</div>
 									</td>
 								</tr>
 							{/each}
 						</tbody>
 					</table>
-					<form class="pure-form" action="/faces/add" method="post">
+					<div class="pure-form">
 						<p>
 							<label for="ip">IP Addr</label>
-							<input type="text" name="ip" id="ip" />
+							<input type="text" name="ip" id="ip" bind:value={newFaceIp} />
 						</p>
 						<p>
-							<button type="submit">Create</button>
+							<button
+								on:click={() => {
+									facesPromise = addFace();
+								}}
+							>
+								Create
+							</button>
 						</p>
-					</form>
+					</div>
 					{#if faces.stCode}
 						<p>{faces.stCode} {faces.stText}</p>
 					{/if}
@@ -170,10 +221,7 @@
 							<tbody>
 								{#each faces.routeData as route, idx}
 									<tr class={idx % 2 === 0 ? 'pure-table-odd' : undefined}>
-										<td
-											><a href="/routing?name={encodeURIComponent(route.route)}">{route.route}</a
-											></td
-										>
+										<td><a href="/routing?name={encodeURIComponent(route.route)}">{route.route}</a></td>
 										<td>{route.cost}</td>
 									</tr>
 								{/each}
