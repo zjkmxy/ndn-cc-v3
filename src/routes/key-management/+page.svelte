@@ -5,6 +5,7 @@
 	import { NdncxxKeyChain } from '$lib/backend/ndncxx-keychain';
 	import { ECDSA } from '@ndn/keychain';
 	import { AltUri } from '@ndn/naming-convention2';
+	import { onDestroy } from 'svelte';
 
 	type CertData = {
 		notBefore: string;
@@ -29,24 +30,38 @@
 	let keyChain: NdncxxKeyChain | undefined = undefined;
 	let certList: Record<string, IdentityData> = {};
 
+	onDestroy(() => {
+		keyChain?.destroy();
+	});
+
 	const onMapFolder = async () => {
 		if (!fileSystemSupported) {
-			console.error('Browser does not support File System Access API. Please use Chrome or Edge 119+.');
+			window.alert('Browser does not support File System Access API. Please use Chrome or Edge 119+.');
 			return;
 		}
 		try {
-			rootHandle = await window.showDirectoryPicker({ mode: 'read' });
+			rootHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
 		} catch (err) {
 			window.alert(`Failed to open target folder: ${err}`);
 			return;
 		}
 
+		await createKeychain();
+	};
+
+	const createKeychain = async () => {
+		// const writable = (await rootHandle.queryPermission({ mode: 'readwrite' })) === 'granted';
+
+		keyChain?.destroy();
+
+		const pibFile = await (async () => {
+			const handle = await rootHandle.getFileHandle('pib.db', {});
+			const file = await handle.getFile();
+			return new Uint8Array(await file.arrayBuffer());
+		})();
+
 		keyChain = new NdncxxKeyChain(
-			async () => {
-				const handle = await rootHandle.getFileHandle('pib.db', {});
-				const file = await handle.getFile();
-				return new Uint8Array(await file.arrayBuffer());
-			},
+			pibFile,
 			async (filename) => {
 				const dirHandle = await rootHandle.getDirectoryHandle('ndnsec-key-file', {});
 				const fileHandle = await dirHandle.getFileHandle(filename, {});
@@ -54,6 +69,12 @@
 				const b64 = await file.text();
 				const pkcs8B64 = await converter.convertBlind(b64);
 				return base64ToBytes(pkcs8B64);
+			},
+			async (pibContent) => {
+				const handle = await rootHandle.getFileHandle('pib.db', {});
+				const writable = await handle.createWritable({ keepExistingData: false });
+				await writable.write(pibContent);
+				await writable.close();
 			}
 		);
 
@@ -64,10 +85,15 @@
 		if (!keyChain) {
 			return;
 		}
+		const idNames = await keyChain.listIdentities();
 		const keyNames = await keyChain.listKeys();
 		const certNames = await keyChain.listCerts();
 		const ret: Record<string, IdentityData> = {};
 
+		for (const identityName of idNames) {
+			const identityNameStr = AltUri.ofName(identityName);
+			ret[identityNameStr] = { keys: {} };
+		}
 		for (const keyName of keyNames) {
 			if (keyName.length <= 2) {
 				continue;
@@ -82,7 +108,7 @@
 			const identityName = AltUri.ofName(keyName.getPrefix(keyName.length - 2));
 			const keyType = keyPair.algo === ECDSA ? 'ECDSA' : 'RSA';
 			if (!ret[identityName]) {
-				ret[identityName] = { keys: {} };
+				continue;
 			}
 			ret[identityName].keys[keyNameStr] = {
 				keyType: keyType,
@@ -116,6 +142,21 @@
 		}
 		certList = ret;
 	};
+
+	const deleteCert = async (name: string) => {
+		await keyChain?.deleteCert(AltUri.parseName(name));
+		await createKeychain();
+	};
+
+	const deleteKey = async (name: string) => {
+		await keyChain?.deleteKey(AltUri.parseName(name));
+		await createKeychain();
+	};
+
+	const deleteIdentity = async (name: string) => {
+		await keyChain?.deleteIdentity(AltUri.parseName(name));
+		await createKeychain();
+	};
 </script>
 
 <svelte:head>
@@ -133,7 +174,7 @@
 			<details>
 				<summary>{idName}</summary>
 				<p class="lv1">
-					<!-- <a href="ndnsec-delete?name={idName}">Delete Identity</a><br> -->
+					<button on:click={() => deleteIdentity(idName)}>Delete Identity</button><br />
 					<b>Keys:</b>
 					<!-- <a href="ndnsec-keygen?name={idName}">Add Key</a> -->
 				</p>
@@ -141,7 +182,7 @@
 					<details class="lv1">
 						<summary>{keyName}</summary>
 						<p class="lv2">
-							<!-- <a href="ndnsec-delete?name={keyName}&type=k">Delete Key</a><br> -->
+							<button on:click={() => deleteKey(keyName)}>Delete Key</button><br />
 							<b>KeyType:</b>
 							{keyObj.keyType}<br />
 							<b>Certificates:</b>
@@ -150,7 +191,7 @@
 							<details class="lv2">
 								<summary>{certName}</summary>
 								<p class="lv3">
-									<!-- <a href="ndnsec-delete?name={certName}&type=c">Delete Certificate</a><br /> -->
+									<button on:click={() => deleteCert(certName)}>Delete Cert</button><br />
 									<b>Validity NotBefore:</b>
 									{certObj.notBefore}<br />
 									<b>Validity NotAfter:</b>

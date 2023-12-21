@@ -37,4 +37,17 @@ export class DerKeyConverter {
 		const keyType = input.length < 640 ? 'EC' : 'RSA';
 		return await this.convert(input, keyType);
 	}
+
+	async toEcPem(input: string) {
+		const pem = `-----BEGIN PRIVATE KEY-----\n` + input + `-----END PRIVATE KEY-----\n`;
+		this.wasmFs.writeFileSync('/pkcs8.key', pem);
+		try {
+			await this.openssl.runCommand('openssl ec -inform PEM -outform PEM -in /pkcs8.key -out /private.key');
+		} catch {
+			// Due to some issue WASI always throws "WASI Exit error: 0"
+		}
+		const rawPem = this.wasmFs.readFileSync('/private.key', { encoding: 'utf8' }) as string;
+		// Remove begin key and end key
+		return rawPem.split('\n').slice(1, -2).join('\n');
+	}
 }
