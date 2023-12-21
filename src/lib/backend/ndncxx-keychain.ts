@@ -12,8 +12,8 @@ export class NdncxxKeyChain extends KeyChain {
 	override readonly needJwk = true;
 
 	constructor(
-		public readonly readPib: () => Promise<Uint8Array>
-		// public readonly writePib: (value: Uint8Array) => Promise<void>
+		public readonly readPib: () => Promise<Uint8Array>,
+		public readonly readFsTpm?: (filename: string) => Promise<Uint8Array>
 	) {
 		super();
 	}
@@ -85,7 +85,6 @@ export class NdncxxKeyChain extends KeyChain {
 					)
 				};
 			} catch (e) {
-				console.log(e);
 				continue;
 			}
 		}
@@ -93,12 +92,30 @@ export class NdncxxKeyChain extends KeyChain {
 	}
 
 	override async getKeyPair(name: Name): Promise<KeyChain.KeyPair> {
-		throw new Error('Method not implemented.');
+		if (!this.readFsTpm) {
+			throw new Error('You must provde FileTPM reader function to use this.');
+		}
+		const sqliteFile = await this.readPib();
+		const db = new SQL.Database(sqliteFile);
+		const keys = db.exec('SELECT key_bits FROM keys WHERE key_name=:name', {
+			':name': Encoder.encode(name)
+		})[0];
+		db.close();
+
+		if (!keys || keys.values.length <= 0) {
+			throw new Error(`Key not existing: ${name.toString()}`);
+		}
+		const pubKeyBits = keys.values[0][0]?.valueOf() as Uint8Array;
+		const tpmFileName = await NdncxxKeyChain.prvKeyFileName(name);
+		const priKeyBits = await this.readFsTpm(tpmFileName);
+		const { algo, keyPair } = await NdncxxKeyChain.importSpki(priKeyBits, pubKeyBits);
+		return new KeyStore.KeyPair(name, algo, keyPair, keyPair);
 	}
 
 	override async insertKey(name: Name, stored: KeyStore.StoredKey): Promise<void> {
 		throw new Error('Method not implemented.');
 	}
+
 	override async deleteKey(name: Name): Promise<void> {
 		throw new Error('Method not implemented.');
 	}
@@ -106,6 +123,7 @@ export class NdncxxKeyChain extends KeyChain {
 	override async insertCert(cert: Certificate): Promise<void> {
 		throw new Error('Method not implemented.');
 	}
+
 	override async deleteCert(name: Name): Promise<void> {
 		throw new Error('Method not implemented.');
 	}

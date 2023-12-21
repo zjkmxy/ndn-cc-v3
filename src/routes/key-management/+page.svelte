@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { base64ToBytes } from '$lib/backend/base64';
+	import { DerKeyConverter } from '$lib/backend/derkey-converter';
 	import { signatureTypeRepr } from '$lib/backend/enums';
 	import { NdncxxKeyChain } from '$lib/backend/ndncxx-keychain';
+	import { ECDSA } from '@ndn/keychain';
 	import { AltUri } from '@ndn/naming-convention2';
 
 	type CertData = {
@@ -11,12 +14,15 @@
 	};
 
 	type KeyData = {
+		keyType: string;
 		certs: Record<string, CertData>;
 	};
 
 	type IdentityData = {
 		keys: Record<string, KeyData>;
 	};
+
+	const converter = new DerKeyConverter('openssl.wasm');
 
 	let fileSystemSupported = typeof window.showDirectoryPicker === 'function';
 	let rootHandle: FileSystemDirectoryHandle;
@@ -35,11 +41,21 @@
 			return;
 		}
 
-		keyChain = new NdncxxKeyChain(async () => {
-			const handle = await rootHandle.getFileHandle('pib.db', {});
-			const file = await handle.getFile();
-			return new Uint8Array(await file.arrayBuffer());
-		});
+		keyChain = new NdncxxKeyChain(
+			async () => {
+				const handle = await rootHandle.getFileHandle('pib.db', {});
+				const file = await handle.getFile();
+				return new Uint8Array(await file.arrayBuffer());
+			},
+			async (filename) => {
+				const dirHandle = await rootHandle.getDirectoryHandle('ndnsec-key-file', {});
+				const fileHandle = await dirHandle.getFileHandle(filename, {});
+				const file = await fileHandle.getFile();
+				const b64 = await file.text();
+				const pkcs8B64 = await converter.convertBlind(b64);
+				return base64ToBytes(pkcs8B64);
+			}
+		);
 
 		await obtainList();
 	};
@@ -48,9 +64,31 @@
 		if (!keyChain) {
 			return;
 		}
-		// Assume every key has at least a self-signed certificate
+		const keyNames = await keyChain.listKeys();
 		const certNames = await keyChain.listCerts();
 		const ret: Record<string, IdentityData> = {};
+
+		for (const keyName of keyNames) {
+			if (keyName.length <= 2) {
+				continue;
+			}
+			let keyPair;
+			try {
+				keyPair = await keyChain.getKeyPair(keyName);
+			} catch {
+				continue;
+			}
+			const keyNameStr = AltUri.ofName(keyName);
+			const identityName = AltUri.ofName(keyName.getPrefix(keyName.length - 2));
+			const keyType = keyPair.algo === ECDSA ? 'ECDSA' : 'RSA';
+			if (!ret[identityName]) {
+				ret[identityName] = { keys: {} };
+			}
+			ret[identityName].keys[keyNameStr] = {
+				keyType: keyType,
+				certs: {}
+			};
+		}
 		for (const certName of certNames) {
 			if (certName.length <= 4) {
 				continue;
@@ -64,13 +102,9 @@
 			const keyName = AltUri.ofName(certName.getPrefix(certName.length - 2));
 			const identityName = AltUri.ofName(certName.getPrefix(certName.length - 4));
 			const certNameStr = AltUri.ofName(certName);
-			if (!ret[identityName]) {
-				ret[identityName] = { keys: {} };
+			if (!ret[identityName] || !ret[identityName].keys[keyName]) {
+				continue;
 			}
-			if (!ret[identityName].keys[keyName]) {
-				ret[identityName].keys[keyName] = { certs: {} };
-			}
-			const keyLocator = cert.data.sigInfo.keyLocator?.name;
 			const sigType = signatureTypeRepr(cert.data.sigInfo.type);
 			const issuer = cert.issuer;
 			ret[identityName].keys[keyName].certs[certNameStr] = {
@@ -108,7 +142,8 @@
 						<summary>{keyName}</summary>
 						<p class="lv2">
 							<!-- <a href="ndnsec-delete?name={keyName}&type=k">Delete Key</a><br> -->
-							<!-- <b>KeyType:</b> { keyObj.keyType }<br> -->
+							<b>KeyType:</b>
+							{keyObj.keyType}<br />
 							<b>Certificates:</b>
 						</p>
 						{#each Object.entries(keyObj.certs) as [certName, certObj]}
@@ -131,7 +166,7 @@
 				{/each}
 			</details>
 		{/each}
-		<form class="pure-form" action="ndnsec-keygen" method="get">
+		<!-- <form class="pure-form" action="ndnsec-keygen" method="get">
 			<p>
 				<label for="name">Name</label>
 				<input type="text" name="name" id="name" />
@@ -139,7 +174,7 @@
 			<p>
 				<button type="submit">Create Identity</button>
 			</p>
-		</form>
+		</form> -->
 	</div>
 </section>
 
