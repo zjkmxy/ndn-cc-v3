@@ -12,9 +12,10 @@ import { FibStatus } from './fib-status';
 import { RibStatus } from './rib-status';
 import { StrategyChoiceMsg } from './strategy-choice';
 import { FaceEventMsg, type FaceEventNotification } from './face-event-notification';
-import { TcpCubic, fetch as fetchSegments } from '@ndn/segmented-object';
+import { CongestionAvoidance, TcpCubic, fetch as fetchSegments } from '@ndn/segmented-object';
 import { SequenceNum } from '@ndn/naming-convention2';
 import { FaceQueryFilter, FaceQueryFilterValue } from './face-query';
+import { LimitedCwnd } from './limited-cwnd';
 
 const DefaultUrl = 'ws://localhost:9696/';
 
@@ -89,14 +90,7 @@ export const monitorFaceEvents = async () => {
 			minRto: 60000,
 			maxRto: 120000
 		},
-		ca: new (class extends TcpCubic {
-			override increase(now: number, rtt: number) {
-				// Rate limit: not supported by default implementation
-				if (this.cwnd <= 3) {
-					return super.increase(now, rtt);
-				}
-			}
-		})()
+		ca: new LimitedCwnd(new TcpCubic())
 	});
 	for await (const segment of continuation) {
 		// This loop will never finish
