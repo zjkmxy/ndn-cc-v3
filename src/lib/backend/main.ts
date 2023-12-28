@@ -2,7 +2,7 @@
 import { Endpoint } from '@ndn/endpoint';
 import type { FwFace } from '@ndn/fw';
 import { WsTransport } from '@ndn/ws-transport';
-import { ControlCommand, enableNfdPrefixReg } from '@ndn/nfdmgmt';
+import { enableNfdPrefixReg } from '@ndn/nfdmgmt';
 import { Component, Interest, Name, digestSigning } from '@ndn/packet';
 import { writable } from 'svelte/store';
 import { Decoder, Encoder } from '@ndn/tlv';

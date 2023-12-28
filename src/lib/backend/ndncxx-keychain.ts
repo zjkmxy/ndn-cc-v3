@@ -1,21 +1,25 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Certificate, ECDSA, KeyChain, KeyStore, RSA } from '@ndn/keychain';
-import { Data, Name } from '@ndn/packet';
+import { Certificate, ECDSA, KeyChain, KeyStore, RSA, generateSigningKey } from '@ndn/keychain';
+import { Component, Data, Name } from '@ndn/packet';
 import { Decoder, Encoder } from '@ndn/tlv';
 import initSqlJs, { type Database } from 'sql.js';
+import { bytesToBase64 } from './base64';
 
 let SQL: initSqlJs.SqlJsStatic;
 initSqlJs().then((SQLVal) => (SQL = SQLVal));
 
 /** Access ndn-cxx KeyChain. */
 export class NdncxxKeyChain extends KeyChain {
-	override readonly needJwk = false;
+	// NDNts forces this to be true. Or it will not give you a valid persistable key.
+	// https://github.com/yoursunny/NDNts/blob/41f4db68260baf4601b81fd52b34e5e3f8c6cbfa/packages/keychain/src/key/impl-generate.ts#L25
+	override readonly needJwk = true;
 	protected readonly db: Database;
 
 	constructor(
 		sqliteFile: Uint8Array,
 		public readonly readFsTpm?: (filename: string) => Promise<Uint8Array>,
-		public readonly writePibFile?: (content: Uint8Array) => Promise<void>
+		public readonly writePibFile?: (content: Uint8Array) => Promise<void>,
+		public readonly writeFsTpm?: (filename: string, pkcs8: Uint8Array) => Promise<void>
 	) {
 		super();
 		this.db = new SQL.Database(sqliteFile);
@@ -166,13 +170,61 @@ export class NdncxxKeyChain extends KeyChain {
 	}
 
 	async newKey(identityName: Name): Promise<void> {
-		if (!this.writePibFile) {
-			throw new Error('PIB is readonly.');
+		if (!this.writePibFile || !this.writeFsTpm) {
+			throw new Error('PIB or TPM is readonly.');
 		}
-		// TODO
+		// const randomKeyId = new Uint8Array(8)
+		// crypto.getRandomValues(randomKeyId);
+		// const keyName = identityName.append('KEY', new Component(8, randomKeyId));
+		const [privateKey, publicKey] = await generateSigningKey(this, identityName, ECDSA);
+		const certificate = await Certificate.selfSign({ privateKey, publicKey });
+		await this.insertCert(certificate);
 	}
 
 	override async insertKey(name: Name, stored: KeyStore.StoredKey): Promise<void> {
-		throw new Error('Method not implemented.');
+		if (!this.writeFsTpm || !this.writePibFile) {
+			throw new Error('PIB or TPM is readonly.');
+		}
+		const tpmFileName = await NdncxxKeyChain.prvKeyFileName(name);
+		const prvKeyJwk = stored.privateKey as JsonWebKey;
+		const spki = stored.publicKeySpki as Uint8Array;
+
+		// Write private key
+		const prvKey = await crypto.subtle.importKey(
+			'jwk',
+			prvKeyJwk,
+			{
+				name: 'ECDSA',
+				namedCurve: 'P-256'
+			},
+			true,
+			['sign']
+		);
+		const pkcs8 = await crypto.subtle.exportKey('pkcs8', prvKey);
+		await this.writeFsTpm(tpmFileName, new Uint8Array(pkcs8));
+
+		// Touch identity
+		let ids = this.db.exec('SELECT id FROM identities WHERE identity=:name', {
+			':name': Encoder.encode(name.getPrefix(name.length - 2))
+		})[0];
+		if (!ids || ids.values.length <= 0) {
+			// Identity not existing
+			this.db.run('INSERT INTO identities (identity) VALUES (:name)', {
+				':name': Encoder.encode(name.getPrefix(name.length - 2))
+			});
+			ids = this.db.exec('SELECT id FROM identities WHERE identity=:name', {
+				':name': Encoder.encode(name.getPrefix(name.length - 2))
+			})[0];
+		}
+		const rowId = ids.values[0][0]?.valueOf() as number;
+
+		// Insert public key
+		this.db.run('INSERT INTO keys (identity_id, key_name, key_bits) VALUES (:rowid, :keyname, :keywire)', {
+			':rowid': rowId,
+			':keyname': Encoder.encode(name),
+			// TODO: Due to unknown reason, spki cannot be parsed by this app only.
+			':keywire': spki
+		});
+		await this.writePibFile(this.db.export());
 	}
 }

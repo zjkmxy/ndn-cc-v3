@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import type { FaceStatus } from '$lib/backend/face-status';
 	import { getFaceList, getFibList } from '$lib/backend/main';
-	import { ControlCommand } from '@ndn/nfdmgmt';
+	import { invoke, localhostPrefix } from '@ndn/nfdmgmt';
 	import { digestSigning } from '@ndn/packet';
 
 	type ResponseType = {
@@ -61,11 +61,11 @@
 			uri = uri + ':6363';
 		}
 
-		const response = await ControlCommand.call(
+		const response = await invoke(
 			'faces/create' as any,
 			{ uri },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: localhostPrefix,
 				signer: digestSigning
 			}
 		);
@@ -74,11 +74,11 @@
 	};
 
 	const removeFace = async (faceId: number) => {
-		const response = await ControlCommand.call(
+		const response = await invoke(
 			'faces/destroy' as any,
 			{ faceId },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: localhostPrefix,
 				signer: digestSigning
 			}
 		);

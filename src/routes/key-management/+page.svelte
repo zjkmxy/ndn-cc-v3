@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { base64ToBytes } from '$lib/backend/base64';
+	import { base64ToBytes, bytesToBase64 } from '$lib/backend/base64';
 	import { DerKeyConverter } from '$lib/backend/derkey-converter';
 	import { signatureTypeRepr } from '$lib/backend/enums';
 	import { NdncxxKeyChain } from '$lib/backend/ndncxx-keychain';
@@ -29,6 +29,7 @@
 	let rootHandle: FileSystemDirectoryHandle;
 	let keyChain: NdncxxKeyChain | undefined = undefined;
 	let certList: Record<string, IdentityData> = {};
+	let newIdName = '';
 
 	onDestroy(() => {
 		keyChain?.destroy();
@@ -75,6 +76,19 @@
 				const writable = await handle.createWritable({ keepExistingData: false });
 				await writable.write(pibContent);
 				await writable.close();
+			},
+			async (filename, pkcs8) => {
+				const dirHandle = await rootHandle.getDirectoryHandle('ndnsec-key-file', {});
+				const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+				const writable = await fileHandle.createWritable({ keepExistingData: false });
+				const b64 = bytesToBase64(pkcs8);
+				let b64Breaks = b64.replace(/(.{64})/g, '$1\n');
+				if (b64Breaks[b64Breaks.length - 1] !== '\n') {
+					b64Breaks += '\n';
+				}
+				const pemB64 = await converter.toEcPem(b64Breaks);
+				await writable.write(pemB64);
+				await writable.close();
 			}
 		);
 
@@ -101,7 +115,8 @@
 			let keyPair;
 			try {
 				keyPair = await keyChain.getKeyPair(keyName);
-			} catch {
+			} catch (e) {
+				console.error(`Unable to obtain key: ${keyName.toString()}: ${e}`);
 				continue;
 			}
 			const keyNameStr = AltUri.ofName(keyName);
@@ -122,7 +137,8 @@
 			let cert;
 			try {
 				cert = await keyChain.getCert(certName);
-			} catch {
+			} catch (e) {
+				console.error(`Unable to obtain cert: ${certName.toString()}: ${e}`);
 				continue;
 			}
 			const keyName = AltUri.ofName(certName.getPrefix(certName.length - 2));
@@ -157,6 +173,11 @@
 		await keyChain?.deleteIdentity(AltUri.parseName(name));
 		await createKeychain();
 	};
+
+	const newKey = async (name: string) => {
+		await keyChain?.newKey(AltUri.parseName(name));
+		await createKeychain();
+	};
 </script>
 
 <svelte:head>
@@ -176,7 +197,7 @@
 				<p class="lv1">
 					<button on:click={() => deleteIdentity(idName)}>Delete Identity</button><br />
 					<b>Keys:</b>
-					<!-- <a href="ndnsec-keygen?name={idName}">Add Key</a> -->
+					<button on:click={() => newKey(idName)}>Add Key</button>
 				</p>
 				{#each Object.entries(idObj.keys) as [keyName, keyObj]}
 					<details class="lv1">
@@ -207,15 +228,15 @@
 				{/each}
 			</details>
 		{/each}
-		<!-- <form class="pure-form" action="ndnsec-keygen" method="get">
+		<div class="pure-form">
 			<p>
 				<label for="name">Name</label>
-				<input type="text" name="name" id="name" />
+				<input type="text" name="name" id="name" bind:value={newIdName} />
 			</p>
 			<p>
-				<button type="submit">Create Identity</button>
+				<button on:click={() => newKey(newIdName)}>Create Identity</button>
 			</p>
-		</form> -->
+		</div>
 	</div>
 </section>
 

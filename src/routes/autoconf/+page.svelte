@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { queryFaceId } from '$lib/backend/main';
 	import { fchQuery } from '@ndn/autoconfig';
-	import { ControlCommand } from '@ndn/nfdmgmt';
+	import * as nfdmgmt from '@ndn/nfdmgmt';
 	import { Name, digestSigning } from '@ndn/packet';
 
 	let msg = '';
@@ -25,11 +25,11 @@
 
 		const uri = 'udp4://' + ip + ':' + url.port;
 		console.log(uri);
-		const response = await ControlCommand.call(
+		const response = await nfdmgmt.invoke(
 			'faces/create' as any,
 			{ uri },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);
@@ -46,20 +46,20 @@
 			return;
 		}
 
-		await ControlCommand.call(
+		await nfdmgmt.invoke(
 			'rib/register',
 			{ name: new Name('/ndn'), faceId: faceId, origin: 66, cost: 100 },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);
 
-		await ControlCommand.call(
+		await nfdmgmt.invoke(
 			'rib/register',
 			{ name: new Name('/localhop/nfd'), faceId: faceId, origin: 66, cost: 100 },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getStrategyChoiceList } from '$lib/backend/main';
 	import type { StrategyChoice } from '$lib/backend/strategy-choice';
-	import { ControlCommand } from '@ndn/nfdmgmt';
+	import * as nfdmgmt from '@ndn/nfdmgmt';
 	import { Name, digestSigning } from '@ndn/packet';
 
 	type ResponseType = {
@@ -27,11 +27,11 @@
 	let newStrategyValue = '';
 
 	const setStrategy = async (prefix: string, strategy: string) => {
-		const response = await ControlCommand.call(
+		const response = await nfdmgmt.invoke(
 			'strategy-choice/set',
 			{ name: new Name(prefix), strategy: new Name(strategy) },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);
@@ -40,11 +40,11 @@
 	};
 
 	const unsetStrategy = async (prefix: string) => {
-		const response = await ControlCommand.call(
+		const response = await nfdmgmt.invoke(
 			'strategy-choice/unset',
 			{ name: new Name(prefix) },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);

@@ -3,7 +3,7 @@
 	import type { FibEntry, NextHopRecord } from '$lib/backend/fib-status';
 	import { getFaceList, getFibList, getRibList } from '$lib/backend/main';
 	import type { RibEntry, Route } from '$lib/backend/rib-status';
-	import { ControlCommand } from '@ndn/nfdmgmt';
+	import * as nfdmgmt from '@ndn/nfdmgmt';
 	import RouteListTable from './RouteListTable.svelte';
 	import { Name, digestSigning } from '@ndn/packet';
 	import { routeOriginRepr } from '$lib/backend/enums';
@@ -59,11 +59,11 @@
 	let newRouteFaceId = 0;
 
 	const addRoute = async (prefix: string, faceId: number) => {
-		const response = await ControlCommand.call(
+		const response = await nfdmgmt.invoke(
 			'rib/register',
 			{ name: new Name(prefix), faceId: faceId },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);
@@ -72,11 +72,11 @@
 	};
 
 	const removeRoute = async (prefix: string, faceId: number) => {
-		const response = await ControlCommand.call(
+		const response = await nfdmgmt.invoke(
 			'rib/unregister',
 			{ name: new Name(prefix), faceId: faceId },
 			{
-				commandPrefix: ControlCommand.localhostPrefix,
+				prefix: nfdmgmt.localhostPrefix,
 				signer: digestSigning
 			}
 		);
