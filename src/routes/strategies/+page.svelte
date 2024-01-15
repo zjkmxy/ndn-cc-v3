@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { getStrategyChoiceList } from '$lib/backend/main';
-	import type { StrategyChoice } from '$lib/backend/strategy-choice';
 	import * as nfdmgmt from '@ndn/nfdmgmt';
 	import { Name, digestSigning } from '@ndn/packet';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { base64ToBytes, bytesToBase64 } from '$lib/backend/base64';
+	import { base64ToBytes, bytesToBase64 } from '@ucla-irl/ndnts-aux/utils';
 	import { DerKeyConverter } from '$lib/backend/derkey-converter';
-	import { signatureTypeRepr } from '$lib/backend/enums';
+	import { signatureTypeRepr } from '@ucla-irl/ndnts-aux/nfd-mgmt';
 	import { NdncxxKeyChain } from '$lib/backend/ndncxx-keychain';
 	import { ECDSA } from '@ndn/keychain';
 	import { AltUri } from '@ndn/naming-convention2';

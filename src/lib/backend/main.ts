@@ -6,16 +6,20 @@ import { enableNfdPrefixReg } from '@ndn/nfdmgmt';
 import { Component, Interest, Name, digestSigning } from '@ndn/packet';
 import { writable } from 'svelte/store';
 import { Decoder, Encoder } from '@ndn/tlv';
-import { GeneralStatus } from './general-status';
-import { FaceStatusMsg } from './face-status';
-import { FibStatus } from './fib-status';
-import { RibStatus } from './rib-status';
-import { StrategyChoiceMsg } from './strategy-choice';
-import { FaceEventMsg, type FaceEventNotification } from './face-event-notification';
 import { CongestionAvoidance, TcpCubic, fetch as fetchSegments } from '@ndn/segmented-object';
 import { SequenceNum } from '@ndn/naming-convention2';
-import { FaceQueryFilter, FaceQueryFilterValue } from './face-query';
-import { LimitedCwnd } from './limited-cwnd';
+import {
+	GeneralStatus,
+	FaceStatusMsg,
+	FibStatus,
+	RibStatus,
+	StrategyChoiceMsg,
+	FaceEventMsg,
+	type FaceEventNotification,
+	FaceQueryFilter,
+	FaceQueryFilterValue
+} from '@ucla-irl/ndnts-aux/nfd-mgmt';
+import { LimitedCwnd } from '@ucla-irl/ndnts-aux/utils';
 
 const DefaultUrl = 'ws://localhost:9696/';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import type { FaceStatus } from '$lib/backend/face-status';
+	import type { FaceStatus } from '@ucla-irl/ndnts-aux/nfd-mgmt';
 	import { getFaceList, getFibList } from '$lib/backend/main';
 	import { invoke, localhostPrefix } from '@ndn/nfdmgmt';
 	import { digestSigning } from '@ndn/packet';

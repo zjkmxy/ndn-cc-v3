@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { contentTypeRepr, signatureTypeRepr } from '$lib/backend/enums';
+	import { contentTypeRepr, signatureTypeRepr } from '@ucla-irl/ndnts-aux/nfd-mgmt';
 	import { endpoint } from '$lib/backend/main';
 	import { Interest, Name } from '@ndn/packet';
 

@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import type { FibEntry, NextHopRecord } from '$lib/backend/fib-status';
+	import type { FibEntry, NextHopRecord, RibEntry, Route } from '@ucla-irl/ndnts-aux/nfd-mgmt';
 	import { getFaceList, getFibList, getRibList } from '$lib/backend/main';
-	import type { RibEntry, Route } from '$lib/backend/rib-status';
 	import * as nfdmgmt from '@ndn/nfdmgmt';
 	import RouteListTable from './RouteListTable.svelte';
 	import { Name, digestSigning } from '@ndn/packet';
-	import { routeOriginRepr } from '$lib/backend/enums';
+	import { routeOriginRepr } from '@ucla-irl/ndnts-aux/nfd-mgmt';
 
 	type ResponseType = {
 		stCode?: number;

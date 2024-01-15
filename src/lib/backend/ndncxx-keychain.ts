@@ -3,7 +3,7 @@ import { Certificate, ECDSA, KeyChain, KeyStore, RSA, generateSigningKey } from 
 import { Component, Data, Name } from '@ndn/packet';
 import { Decoder, Encoder } from '@ndn/tlv';
 import initSqlJs, { type Database } from 'sql.js';
-import { bytesToBase64 } from './base64';
+import { bytesToBase64 } from '@ucla-irl/ndnts-aux/utils';
 
 let SQL: initSqlJs.SqlJsStatic;
 initSqlJs().then((SQLVal) => (SQL = SQLVal));

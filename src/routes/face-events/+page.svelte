@@ -4,7 +4,7 @@
 		facePersistencyToString,
 		faceScopeToString,
 		linkTypeToString
-	} from '$lib/backend/enums';
+	} from '@ucla-irl/ndnts-aux/nfd-mgmt';
 	import { faceEvents } from '$lib/backend/main';
 </script>
 
